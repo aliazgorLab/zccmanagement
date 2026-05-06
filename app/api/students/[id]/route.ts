@@ -7,13 +7,14 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin@zcc2024";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
 
     const body = await request.json();
     const { newFee, adminPassword } = body;
+    const params = await context.params;
     const studentId = params.id;
 
     // Validate inputs
