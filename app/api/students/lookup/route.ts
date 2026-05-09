@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     const totalPaid = Number(
       student.totalPaid ??
-        (student.payments ?? []).reduce((sum, p) => sum + (p.amount ?? 0), 0) ??
+        (student.payments ?? []).reduce((sum: number, p: any) => sum + (p.amount ?? 0), 0) ??
         0
     );
     const totalAgreedFee =

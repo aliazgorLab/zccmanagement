@@ -145,7 +145,7 @@ export async function GET() {
       .sort({ date: -1, createdAt: -1 })
       .lean();
 
-    const total = expenses.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const total = expenses.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
 
     return NextResponse.json(
       {

@@ -66,7 +66,7 @@ export async function PATCH(
     student.totalFee = parsedFee;
     
     // Calculate new status
-    const totalPaid = (student.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalPaid = (student.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
     const remainingDue = Math.max(parsedFee - totalPaid, 0);
     student.status = remainingDue <= 0 ? "PAID" : "DUE";
 

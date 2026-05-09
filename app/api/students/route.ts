@@ -248,7 +248,7 @@ export async function PUT(request: NextRequest) {
     });
 
     // Update status
-    const remainingDue = (student.totalAgreedFee || 0) - student.payments.reduce((sum, p) => sum + p.amount, 0);
+    const remainingDue = (student.totalAgreedFee || 0) - student.payments.reduce((sum: number, p: any) => sum + p.amount, 0);
     student.status = remainingDue <= 0 ? "PAID" : "DUE";
 
     await student.save();
@@ -269,7 +269,7 @@ export async function PUT(request: NextRequest) {
           id: student._id,
           name: student.name,
           totalAgreedFee: student.totalAgreedFee,
-          totalPaid: student.payments.reduce((sum, p) => sum + p.amount, 0),
+          totalPaid: student.payments.reduce((sum: number, p: any) => sum + p.amount, 0),
           payments: student.payments,
           status: student.status,
         },

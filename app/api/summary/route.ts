@@ -39,30 +39,30 @@ export async function GET(request: NextRequest) {
       },
     }).lean();
 
-    const totalInflow = students.reduce((sum, student) => {
+    const totalInflow = students.reduce((sum: number, student: any) => {
       const paidToday = (student.payments || [])
         .filter((p: any) => {
           const paymentDate = new Date(p.date);
           paymentDate.setHours(0, 0, 0, 0);
           return paymentDate.getTime() === startOfDay.getTime();
         })
-        .reduce((s, p) => s + (p.amount || 0), 0);
+        .reduce((s: number, p: any) => s + (p.amount || 0), 0);
       return sum + paidToday;
     }, 0);
     const totalOutflow = expenses.reduce(
-      (sum, expense) => sum + (expense.amount || 0),
+      (sum: number, expense: any) => sum + (expense.amount || 0),
       0
     );
 
     const studentData = students.map((student) => {
-      const totalPaid = (student.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+      const totalPaid = (student.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
       const paidToday = (student.payments || [])
         .filter((p: any) => {
           const paymentDate = new Date(p.date);
           paymentDate.setHours(0, 0, 0, 0);
           return paymentDate.getTime() === startOfDay.getTime();
         })
-        .reduce((s, p) => s + (p.amount || 0), 0);
+        .reduce((s: number, p: any) => s + (p.amount || 0), 0);
       const totalAgreedFee = student.totalAgreedFee ?? student.totalFee ?? student.courseFee ?? 0;
       const remainingDue = Math.max(totalAgreedFee - totalPaid, 0);
       

@@ -21,12 +21,29 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin@zcc2024";
 export async function DELETE(request: NextRequest) {
   try {
     // ── 1. Authenticate ──────────────────────────────────────────────────────
-    const body = await request.json();
-    const { adminPassword } = body ?? {};
+    // Check ADMIN_KEY header first (for authorized services)
+    const adminKeyHeader = request.headers.get("X-ADMIN-KEY");
+    const adminKeyEnv = process.env.ADMIN_KEY;
+    
+    let isAuthenticated = false;
+    
+    // Method 1: Check header-based ADMIN_KEY
+    if (adminKeyHeader && adminKeyEnv && adminKeyHeader === adminKeyEnv) {
+      isAuthenticated = true;
+    }
+    
+    // Method 2: Check body password (fallback)
+    if (!isAuthenticated) {
+      const body = await request.json();
+      const { adminPassword } = body ?? {};
+      if (adminPassword && adminPassword === ADMIN_PASSWORD) {
+        isAuthenticated = true;
+      }
+    }
 
-    if (!adminPassword || adminPassword !== ADMIN_PASSWORD) {
+    if (!isAuthenticated) {
       return NextResponse.json(
-        { error: "Unauthorized — invalid admin password." },
+        { error: "Unauthorized — invalid admin credentials." },
         { status: 403 }
       );
     }
@@ -48,7 +65,7 @@ export async function DELETE(request: NextRequest) {
       if (db) {
         const countersCollection = db.collection("counters");
         const updateResult = await countersCollection.updateOne(
-          { _id: "students_serialNumber" },
+          { _id: "students_serialNumber" as any },
           { $set: { seq: 0 } }
         );
         // seq is set to 0 so the NEXT inserted document gets seq 1.
