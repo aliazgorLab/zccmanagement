@@ -1,7 +1,7 @@
 import mongoose, { type Document, Schema } from "mongoose";
 
 export type ExpenseType = "Breakfast" | "Lunch" | "Evening" | "Office";
-export type ExpenseCategory = "Staff" | "Teacher" | "Guest";
+export type ExpenseCategory = "Staff" | "Teacher" | "Guest" | "Others";
 
 export interface ExpenseDocument extends Document {
   type: ExpenseType;
@@ -21,7 +21,7 @@ const ExpenseSchema = new Schema<ExpenseDocument>(
     category: {
       type: String,
       required: true,
-      enum: ["Staff", "Teacher", "Guest"],
+      enum: ["Staff", "Teacher", "Guest", "Others"],
     },
     amount: {
       type: Number,

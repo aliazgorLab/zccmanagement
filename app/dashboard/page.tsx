@@ -9,6 +9,7 @@ interface SummaryData {
   totalOutflow: number;
   students: Array<{
     _id: string;
+    studentId: string;
     name: string;
     formNumber: string;
     receiptNumber?: string;

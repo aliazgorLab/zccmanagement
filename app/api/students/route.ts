@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Student from "@/models/Student";
+import { sendPaymentSMS } from "@/lib/sms";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
     // Get request body
     const body = await request.json();
     const {
+      studentId,
       name,
       phone,
       year,
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
     const parsedTotalAgreedFee = Number(totalAgreedFeeInput);
 
     // Validate required fields
-    if (!name || !phone || !year || !formNumber || !moneyReceiptNumber || amountPaid === undefined || !paymentType) {
+    if (!studentId || !name || !year || !formNumber || !moneyReceiptNumber || amountPaid === undefined || !paymentType) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -58,6 +60,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "amountPaid must be a valid non-negative number" },
         { status: 400 }
+      );
+    }
+
+    // Check if studentId already exists
+    const existingById = await Student.findOne({ studentId });
+    if (existingById) {
+      return NextResponse.json(
+        { error: "A student with this Student ID already exists" },
+        { status: 409 }
       );
     }
 
@@ -108,8 +119,9 @@ export async function POST(request: NextRequest) {
     try {
       // Create new student document
       const newStudent = new Student({
+        studentId: String(studentId).trim(),
         name: String(name).trim(),
-        phone: String(phone).trim(),
+        phone: phone ? String(phone).trim() : undefined,
         year,
         formNumber: String(formNumber).trim(),
         moneyReceiptNumber: String(moneyReceiptNumber).trim(),
@@ -126,6 +138,14 @@ export async function POST(request: NextRequest) {
 
       // Save to database
       savedStudent = await newStudent.save();
+
+      // Fire-and-forget SMS — does not affect the response if it fails
+      void sendPaymentSMS(
+        String(phone).trim(),
+        String(name).trim(),
+        parsedAmountPaid,
+        remainingDue
+      );
     } catch (error) {
       console.error("FULL ERROR:", error);
       return NextResponse.json(
@@ -143,6 +163,7 @@ export async function POST(request: NextRequest) {
         message: "Student admission record created successfully",
         student: {
           id: savedStudent._id,
+          studentId: savedStudent.studentId,
           name: savedStudent.name,
           phone: savedStudent.phone,
           year: savedStudent.year,
@@ -231,6 +252,14 @@ export async function PUT(request: NextRequest) {
     student.status = remainingDue <= 0 ? "PAID" : "DUE";
 
     await student.save();
+
+    // Fire-and-forget SMS — does not affect the response if it fails
+    void sendPaymentSMS(
+      String(student.phone).trim(),
+      String(student.name).trim(),
+      parsedAmount,
+      Math.max(remainingDue, 0)
+    );
 
     return NextResponse.json(
       {

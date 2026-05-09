@@ -6,11 +6,14 @@ import AddPaymentModal from "../dashboard/AddPaymentModal";
 
 interface Student {
   _id: string;
+  studentId: string;
   name: string;
   formNumber: string;
-  phone: string;
+  phone?: string;
   year: "1st" | "2nd";
   totalAgreedFee: number;
+  totalPaid: number;
+  currentDue: number;
   amountPaid: number;
   remainingDue: number;
   status: "PAID" | "DUE";
@@ -32,7 +35,30 @@ export default function StudentsPage() {
         const data = await response.json();
 
         if (response.ok) {
-          setStudents(data.students || []);
+          const normalizedStudents: Student[] = (data.students || []).map(
+            (student: Student & {
+              totalPaid?: number;
+              currentDue?: number;
+            }) => {
+              const totalPaid = Number(student.totalPaid ?? student.amountPaid ?? 0);
+              const currentDue = Number(
+                student.currentDue ??
+                  student.remainingDue ??
+                  Math.max((student.totalAgreedFee ?? 0) - totalPaid, 0)
+              );
+
+              return {
+                ...student,
+                totalPaid,
+                currentDue,
+                amountPaid: totalPaid,
+                remainingDue: currentDue,
+                status: totalPaid >= student.totalAgreedFee ? "PAID" : student.status,
+              };
+            }
+          );
+
+          setStudents(normalizedStudents);
           setError(null);
         } else {
           setError(data.error || "Failed to fetch students");
@@ -54,10 +80,12 @@ export default function StudentsPage() {
     window.location.reload();
   };
 
+  const q = searchTerm.toLowerCase();
   const filteredStudents = students.filter((student) =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.formNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.phone.includes(searchTerm)
+    (student.name ?? "").toLowerCase().includes(q) ||
+    (student.formNumber ?? "").toLowerCase().includes(q) ||
+    (student.studentId ?? "").toLowerCase().includes(q) ||
+    (student.phone ?? "").includes(searchTerm)
   );
 
   return (
@@ -77,7 +105,7 @@ export default function StudentsPage() {
         <div className="mb-6">
           <input
             type="text"
-            placeholder="Search by name, form number, or phone..."
+            placeholder="Search by name, student ID, or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -104,7 +132,7 @@ export default function StudentsPage() {
                     Form No
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                    Phone
+                    Student ID
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
                     Year
@@ -153,8 +181,8 @@ export default function StudentsPage() {
                       <td className="px-6 py-4 text-sm text-slate-600">
                         {student.formNumber}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">
-                        {student.phone}
+                      <td className="px-6 py-4 text-sm font-mono text-slate-600">
+                        {student.studentId}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600">
                         {student.year} Year
@@ -163,30 +191,39 @@ export default function StudentsPage() {
                         ৳{student.totalAgreedFee.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-sm text-right font-medium text-emerald-600">
-                        ৳{student.amountPaid.toLocaleString()}
+                        ৳{student.totalPaid.toLocaleString()}
                       </td>
                       <td
                         className={`px-6 py-4 text-sm text-right font-medium ${
-                          student.remainingDue > 0
+                          student.currentDue > 0
                             ? "text-rose-600"
                             : "text-emerald-600"
                         }`}
                       >
-                        ৳{student.remainingDue.toLocaleString()}
+                        ৳{student.currentDue.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-center">
+                        {(() => {
+                          const status =
+                            student.totalPaid >= student.totalAgreedFee
+                              ? "PAID"
+                              : student.status;
+
+                          return (
                         <span
                           className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
-                            student.status === "PAID"
+                              status === "PAID"
                               ? "bg-emerald-100 text-emerald-700"
                               : "bg-rose-100 text-rose-700"
                           }`}
                         >
-                          {student.status}
-                        </span>
+                            {status}
+                          </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {student.remainingDue > 0 && (
+                        {student.currentDue > 0 && (
                           <button
                             onClick={() => {
                               setSelectedStudent(student);
@@ -219,13 +256,13 @@ export default function StudentsPage() {
             <div className="bg-white border border-slate-200 rounded-lg p-4">
               <p className="text-sm font-medium text-slate-600 mb-1">Total Collection</p>
               <p className="text-2xl font-semibold text-emerald-600">
-                ৳{filteredStudents.reduce((sum, s) => sum + s.amountPaid, 0).toLocaleString()}
+                ৳{filteredStudents.reduce((sum, s) => sum + s.totalPaid, 0).toLocaleString()}
               </p>
             </div>
             <div className="bg-white border border-slate-200 rounded-lg p-4">
               <p className="text-sm font-medium text-slate-600 mb-1">Total Pending</p>
               <p className="text-2xl font-semibold text-rose-600">
-                ৳{filteredStudents.reduce((sum, s) => sum + s.remainingDue, 0).toLocaleString()}
+                ৳{filteredStudents.reduce((sum, s) => sum + s.currentDue, 0).toLocaleString()}
               </p>
             </div>
           </div>

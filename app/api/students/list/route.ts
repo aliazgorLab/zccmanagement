@@ -8,22 +8,43 @@ export async function GET(request: NextRequest) {
 
     // Fetch all students
     const students = await Student.find({}).sort({ createdAt: -1 }).lean();
+    console.log("Sample Student from DB:", students[0]);
 
     const studentData = students.map((student) => {
-      const totalPaid = (student.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+      const totalPaid = Number(
+        student.totalPaid ??
+          student.amountPaid ??
+          (student.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0) ??
+          0
+      );
       const totalAgreedFee = student.totalAgreedFee ?? student.totalFee ?? student.courseFee ?? 0;
-      const remainingDue = Math.max(totalAgreedFee - totalPaid, 0);
+      const currentDue = Number(
+        student.currentDue ??
+          student.remainingDue ??
+          Math.max(totalAgreedFee - totalPaid, 0)
+      );
+
+      // Fall back to studentName for records imported via bulk script
+      const resolvedName: string = (student.name || (student as any).studentName || "").trim();
+
+      const status =
+        totalPaid >= totalAgreedFee || currentDue <= 0
+          ? "PAID"
+          : student.status ?? "DUE";
 
       return {
         _id: student._id?.toString(),
-        name: student.name,
-        phone: student.phone,
-        year: student.year,
-        formNumber: student.formNumber,
+        studentId: (student.studentId ?? "").toString(),
+        name: resolvedName,
+        phone: student.phone ?? "",
+        year: student.year ?? "2nd",
+        formNumber: (student.formNumber ?? student.studentId ?? "").toString(),
         totalAgreedFee: totalAgreedFee,
+        totalPaid,
+        currentDue,
         amountPaid: totalPaid,
-        remainingDue: remainingDue,
-        status: student.status,
+        remainingDue: currentDue,
+        status,
         payments: student.payments || [],
       };
     });

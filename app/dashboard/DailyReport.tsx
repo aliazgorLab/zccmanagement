@@ -2,6 +2,7 @@
 
 type SummaryStudent = {
   _id: string;
+  studentId: string;
   name: string;
   formNumber: string;
   receiptNumber?: string;
@@ -48,8 +49,12 @@ const DailyReport = ({ data, reportDate, loading }: DailyReportProps) => {
     <div className="bg-white p-6 max-w-[210mm] mx-auto print:p-0 print:max-w-none" id="printable-report">
       <div className="text-center border-b border-slate-300 pb-3 mb-4 print:pb-2 print:mb-3">
         <h1 className="text-xl font-bold text-slate-900 print:text-lg">Zahids Chem Clinic</h1>
-        <p className="text-base font-medium text-slate-700 print:text-sm">জাহিদ স্যার (রসায়ন)</p>
-        <p className="text-xs text-slate-500 print:text-[10px]">৪র্থ তলা, গুলজার টাওয়ার, চকবাজার, চট্টগ্রাম</p>
+        <p className="text-base font-medium text-slate-700 print:text-sm">
+          <span className="bangla-font">জাহিদ স্যার (রসায়ন)</span>
+        </p>
+        <p className="text-xs text-slate-500 print:text-[10px]">
+          <span className="bangla-font">৪র্থ তলা, গুলজার টাওয়ার, চকবাজার, চট্টগ্রাম</span>
+        </p>
         <div className="text-[10px] text-slate-400 mt-1">
           Help Line: +8801841783983 | Email: info@zahidschemclinic.com
         </div>
@@ -73,12 +78,12 @@ const DailyReport = ({ data, reportDate, loading }: DailyReportProps) => {
         <table className="w-full table-fixed text-left text-[10px] border-collapse border border-slate-300 print:border-slate-300">
           <colgroup>
             <col className="w-[4%]" />
-            <col className="w-[12%]" />
-            <col className="w-[12%]" />
-            <col className="w-[24%]" />
-            <col className="w-[12%]" />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
+            <col className="w-[11%]" />
+            <col className="w-[11%]" />
+            <col className="w-[28%]" />
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
+            <col className="w-[16%]" />
           </colgroup>
           <thead>
             <tr className="bg-slate-50 border-b border-slate-300">
@@ -104,7 +109,12 @@ const DailyReport = ({ data, reportDate, loading }: DailyReportProps) => {
                   <td className="py-2 px-3 border border-slate-300 text-center align-top">{index + 1}</td>
                   <td className="py-2 px-3 border border-slate-300 align-top">{student.formNumber}</td>
                   <td className="py-2 px-3 border border-slate-300 align-top">{student.receiptNumber ?? "-"}</td>
-                  <td className="py-2 px-3 border border-slate-300 align-top break-words">{student.name}</td>
+                  <td className="py-2 px-3 border border-slate-300 align-top">
+                    <span className="block font-medium">{student.name}</span>
+                    <span className="block text-[9px] font-mono text-slate-400 mt-0.5">
+                      ID: {student.studentId ?? "-"}
+                    </span>
+                  </td>
                   <td className="py-2 px-3 border border-slate-300 text-right align-top whitespace-nowrap">
                     ৳{Number(student.totalFee || 0).toLocaleString()}
                   </td>
@@ -161,10 +171,10 @@ const DailyReport = ({ data, reportDate, loading }: DailyReportProps) => {
               data.expenses.map((exp, index) => (
                 <tr key={exp._id} className="border-b border-slate-300">
                   <td className="py-2 px-2 border border-slate-300 text-center">{index + 1}</td>
-                  <td className="py-2 px-2 border border-slate-300">{exp.type ?? exp.category ?? "-"}</td>
-                  <td className="py-2 px-2 border border-slate-300">{exp.category ?? exp.recipient ?? "-"}</td>
+                  <td className="py-2 px-2 border border-slate-300">{exp.type ?? "-"}</td>
+                  <td className="py-2 px-2 border border-slate-300">{exp.category ?? "-"}</td>
                   <td className="py-2 px-2 border border-slate-300 text-slate-600">{exp.by ?? "Admin"}</td>
-                  <td className="py-2 px-2 border border-slate-300 italic text-[10px]">{exp.note || "-"}</td>
+                  <td className="py-2 px-2 border border-slate-300 italic text-[10px] bangla-font">{exp.note || "-"}</td>
                   <td className="py-2 px-2 border border-slate-300 text-right">
                     ৳{Number(exp.amount || 0).toLocaleString()}
                   </td>
@@ -205,7 +215,7 @@ const DailyReport = ({ data, reportDate, loading }: DailyReportProps) => {
         </div>
       </div>
 
-      <div className="mt-20 flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-300 pt-2">
+      <div className="report-footer mt-20 flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-300 pt-2">
         <p>Powered By: ZCC TECH TEAM</p>
         <p>4th floor, Gulzar Tower, Chawkbazar, Chattogram</p>
         <p>Page 1</p>
@@ -213,8 +223,17 @@ const DailyReport = ({ data, reportDate, loading }: DailyReportProps) => {
 
       <style jsx global>{`
         @media print {
+          @page {
+            margin: 12mm;
+          }
+
           body * {
             visibility: hidden;
+          }
+
+          body {
+            margin: 0;
+            padding: 0;
           }
 
           #printable-report,
@@ -227,6 +246,26 @@ const DailyReport = ({ data, reportDate, loading }: DailyReportProps) => {
             left: 0;
             top: 0;
             width: 100%;
+            padding-bottom: 56px;
+            box-sizing: border-box;
+          }
+
+          .report-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            margin-top: 0;
+            padding: 8px 12mm 0;
+            border-top: 1px solid #cbd5e1;
+            background-color: #ffffff;
+            color: #94a3b8;
+            font-size: 10px;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 10;
           }
 
           nav,

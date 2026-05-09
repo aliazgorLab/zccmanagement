@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
       
       return {
         _id: student._id?.toString(),
+        studentId: student.studentId ?? "-",
         name: student.name,
         formNumber: student.formNumber,
         receiptNumber: student.moneyReceiptNumber ?? "-",
@@ -82,9 +83,11 @@ export async function GET(request: NextRequest) {
 
     const expenseData = expenses.map((expense) => ({
       _id: expense._id?.toString(),
-      category: expense.type,
-      recipient: expense.category,
+      type: expense.type,
+      category: expense.category,
       amount: expense.amount,
+      note: expense.note || "",
+      by: "Admin",
     }));
 
     return NextResponse.json(

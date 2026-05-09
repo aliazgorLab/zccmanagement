@@ -3,7 +3,7 @@ import connectDB from "@/lib/mongodb";
 import Expense from "@/models/Expense";
 
 const ALLOWED_TYPES = ["Breakfast", "Lunch", "Evening", "Office"] as const;
-const ALLOWED_CATEGORIES = ["Staff", "Teacher", "Guest"] as const;
+const ALLOWED_CATEGORIES = ["Staff", "Teacher", "Guest", "Others"] as const;
 
 type ExpenseType = (typeof ALLOWED_TYPES)[number];
 type ExpenseCategory = (typeof ALLOWED_CATEGORIES)[number];
@@ -70,9 +70,14 @@ export async function POST(request: NextRequest) {
         date: new Date(),
       });
 
+      console.log("Creating expense with:", { type, category, amount: parsedAmount, note });
       savedExpense = await newExpense.save();
+      console.log("Expense saved successfully:", savedExpense);
     } catch (error) {
       console.error("FULL ERROR:", error);
+      if (error instanceof Error) {
+        console.error("Validation Error:", error.message);
+      }
       return NextResponse.json(
         {
           error: "Expense save failed",

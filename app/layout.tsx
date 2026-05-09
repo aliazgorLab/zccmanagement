@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Hind_Siliguri } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
@@ -11,6 +11,12 @@ const inter = Inter({
 const mono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+});
+
+const bangla = Hind_Siliguri({
+  variable: "--font-bangla",
+  subsets: ["bengali"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -26,11 +32,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${mono.variable} h-full antialiased`}
+      className={`${inter.variable} ${mono.variable} ${bangla.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-slate-50 text-slate-900 font-sans">
         <div className="min-h-screen lg:flex">
-          <aside className="border-r border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 lg:w-72 lg:shrink-0 lg:sticky lg:top-0 lg:h-screen">
+          <aside className="border-r border-slate-200 bg-white/90 backdrop-blur supports-backdrop-filter:bg-white/80 lg:w-72 lg:shrink-0 lg:sticky lg:top-0 lg:h-screen">
             <div className="flex h-full flex-col p-6 lg:p-8">
               <Link href="/" className="group inline-flex flex-col gap-1">
                 <span className="text-2xl font-semibold tracking-tight text-slate-900">

@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.bangla-font {
+  font-family: var(--font-bangla), "Kalpurush", "Siyam Rupali", "Hind Siliguri", sans-serif;
+  line-height: 1.35;
+}
+
+@media print {
+  .bangla-font {
+    font-family: var(--font-bangla), "Kalpurush", "Siyam Rupali", "Hind Siliguri", sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

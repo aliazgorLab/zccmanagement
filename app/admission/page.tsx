@@ -11,6 +11,7 @@ export default function AdmissionPage() {
 
   // Form state
   const [formData, setFormData] = useState({
+    studentId: "",
     name: "",
     phone: "",
     year: "1st" as "1st" | "2nd",
@@ -50,14 +51,14 @@ export default function AdmissionPage() {
 
     // Validation
     if (
+      !formData.studentId ||
       !formData.name ||
-      !formData.phone ||
       !formData.formNumber ||
       !formData.moneyReceiptNumber ||
       !formData.amountPaid ||
       !formData.totalAgreedFee
     ) {
-      setError("Please fill in all fields");
+      setError("Please fill in all required fields (Student ID, Name, Form No, Receipt No, Amount)");
       return;
     }
 
@@ -70,8 +71,9 @@ export default function AdmissionPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          studentId: formData.studentId,
           name: formData.name,
-          phone: formData.phone,
+          phone: formData.phone || undefined,
           year: formData.year,
           formNumber: formData.formNumber,
           moneyReceiptNumber: formData.moneyReceiptNumber,
@@ -91,6 +93,7 @@ export default function AdmissionPage() {
       setSuccess(true);
       // Reset form
       setFormData({
+        studentId: "",
         name: "",
         phone: "",
         year: "1st",
@@ -149,11 +152,11 @@ export default function AdmissionPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Name and Phone - 2 Column Grid */}
+              {/* Name and Student ID - 2 Column Grid */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Full Name
+                    Full Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -167,17 +170,32 @@ export default function AdmissionPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Phone Number
+                    Student ID <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
+                    type="text"
+                    name="studentId"
+                    value={formData.studentId}
                     onChange={handleInputChange}
-                    placeholder="+880 1234567890"
+                    placeholder="e.g., ZCC-2024-001"
                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   />
                 </div>
+              </div>
+
+              {/* Phone Number - Optional */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Phone Number <span className="text-slate-400 font-normal">(optional — for SMS)</span>
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="+880 1234567890"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                />
               </div>
 
               {/* Year Selection - Segmented Button */}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 type ExpenseType = "Breakfast" | "Lunch" | "Evening" | "Office";
-type ExpenseCategory = "Staff" | "Teacher" | "Guest";
+type ExpenseCategory = "Staff" | "Teacher" | "Guest" | "Others";
 
 interface ExpenseItem {
   _id: string;
@@ -15,7 +15,7 @@ interface ExpenseItem {
 }
 
 const typeOptions: ExpenseType[] = ["Breakfast", "Lunch", "Evening", "Office"];
-const categoryOptions: ExpenseCategory[] = ["Staff", "Teacher", "Guest"];
+const categoryOptions: ExpenseCategory[] = ["Staff", "Teacher", "Guest", "Others"];
 
 export default function ExpensesPage() {
   const [loading, setLoading] = useState(false);

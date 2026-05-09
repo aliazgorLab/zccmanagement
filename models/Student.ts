@@ -11,8 +11,9 @@ export interface Payment {
 }
 
 export interface StudentDocument extends Document {
+  studentId: string;
   name: string;
-  phone: string;
+  phone?: string;
   year: StudentYear;
   formNumber: string;
   moneyReceiptNumber: string;
@@ -20,6 +21,7 @@ export interface StudentDocument extends Document {
   totalFee: number;
   courseFee: number;
   totalPaid: number;
+  currentDue: number;
   payments: Payment[];
   discount: number;
   paymentType: PaymentType;
@@ -29,6 +31,12 @@ export interface StudentDocument extends Document {
 
 const StudentSchema = new Schema<StudentDocument>(
   {
+    studentId: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
     name: {
       type: String,
       required: true,
@@ -36,7 +44,7 @@ const StudentSchema = new Schema<StudentDocument>(
     },
     phone: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     year: {
@@ -72,6 +80,12 @@ const StudentSchema = new Schema<StudentDocument>(
       min: 0,
     },
     totalPaid: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+    },
+    currentDue: {
       type: Number,
       required: true,
       default: 0,
@@ -144,6 +158,7 @@ StudentSchema.pre("validate", function () {
   }
 
   const balance = (this.totalAgreedFee ?? 0) - (this.totalPaid ?? 0);
+  this.currentDue = Math.max(balance, 0);
   this.status = balance <= 0 ? "PAID" : "DUE";
   
   // Lock the fee after first admission
