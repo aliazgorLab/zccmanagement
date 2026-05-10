@@ -1,11 +1,15 @@
 /**
  * SMS utility — server-side only.
- * Uses the BulkSMSBD / SSL Wireless API to send transactional SMS messages.
- * API credentials and sender ID are read from environment variables and are
- * never exposed to the frontend.
+ * Uses the BulkSMSBD API to send transactional SMS messages.
+ * ALL credentials (api_key, api_secret, sender_id) and the API endpoint URL
+ * are read exclusively from environment variables — nothing is hardcoded here.
+ *
+ * Required env vars (set in .env.local):
+ *   BULKSMSBD_API_KEY    – your BulkSMSBD API key
+ *   BULKSMSBD_API_SECRET – your BulkSMSBD API secret
+ *   BULKSMSBD_SENDER_ID  – registered sender / mask number
+ *   BULKSMSBD_API_URL    – full API endpoint URL (optional override)
  */
-
-const BULKSMSBD_API_URL = "https://bulksmsbd.net/api/smsapi";
 
 function normalizeBangladeshiNumber(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -38,46 +42,50 @@ function maskCredential(value: string): string {
  * Returns true on success, false on any failure (network or API).
  */
 export async function sendSMS(phone: string, message: string): Promise<BulkSmsResponse> {
-  const apiKey = process.env.BULKSMSBD_API_KEY;
+  const apiKey    = process.env.BULKSMSBD_API_KEY;
   const apiSecret = process.env.BULKSMSBD_API_SECRET;
-  const senderId = process.env.BULKSMSBD_SENDER_ID;
+  const senderId  = process.env.BULKSMSBD_SENDER_ID;
+  const apiUrl    = process.env.BULKSMSBD_API_URL;
   const normalizedPhone = normalizeBangladeshiNumber(phone);
 
   if (!apiKey || !apiSecret || !senderId) {
     console.error(
-      "[SMS] BULKSMSBD_API_KEY, BULKSMSBD_API_SECRET, or BULKSMSBD_SENDER_ID is not set in environment variables."
+      "[SMS] Missing env var(s): BULKSMSBD_API_KEY, BULKSMSBD_API_SECRET, or BULKSMSBD_SENDER_ID must be set."
     );
     return { rawBody: "missing-environment-variables" };
   }
 
-  // Create form-urlencoded payload (provider may expect this format)
+  if (!apiUrl) {
+    console.error("[SMS] BULKSMSBD_API_URL is not set in environment variables.");
+    return { rawBody: "missing-api-url" };
+  }
+
+  // Build form-urlencoded payload
   const params = new URLSearchParams({
-    api_key: apiKey,
+    api_key:    apiKey,
     api_secret: apiSecret,
-    senderid: senderId,
+    senderid:   senderId,
     message,
-    number: normalizedPhone,
+    number:     normalizedPhone,
   });
 
-  // Log masked request for debugging
-  console.log("[SMS] Sending request to BulkSMSBD:", {
-    url: BULKSMSBD_API_URL,
+  // Log masked request for debugging (credentials are masked)
+  console.log("[SMS] Dispatching via env-configured endpoint:", {
+    url: apiUrl,
     method: "POST",
     contentType: "application/x-www-form-urlencoded",
     payload: {
-      api_key: maskCredential(apiKey),
+      api_key:    maskCredential(apiKey),
       api_secret: maskCredential(apiSecret),
-      senderid: maskCredential(senderId),
+      senderid:   maskCredential(senderId),
       message,
       number: normalizedPhone,
     },
   });
 
-  const response = await fetch(BULKSMSBD_API_URL, {
+  const response = await fetch(apiUrl, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
   });
 
