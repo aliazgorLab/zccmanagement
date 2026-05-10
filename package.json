@@ -10,6 +10,7 @@
     "create:admin": "tsx scripts/createAdmin.ts"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "lucide-react": "^1.14.0",

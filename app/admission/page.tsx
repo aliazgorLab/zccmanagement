@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { ReceiptPDF } from "@/components/ReceiptPDF";
 
 interface ExistingStudent {
   _id: string;
@@ -18,6 +20,7 @@ export default function AdmissionPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [submittedData, setSubmittedData] = useState<any>(null);
 
   // Lookup state
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -175,6 +178,13 @@ export default function AdmissionPage() {
       }
 
       setSuccess(true);
+      // Capture the exact submitted data for the PDF receipt before resetting the form
+      setSubmittedData({
+        ...formData,
+        existingPaidAmount: existingStudent?.totalPaid || 0,
+        date: new Date().toLocaleDateString("en-GB")
+      });
+
       // Reset form
       setFormData({
         studentId: "",
@@ -188,10 +198,7 @@ export default function AdmissionPage() {
         paymentType: "Partial",
       });
 
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        router.push("/");
-      }, 2000);
+      // Note: Removed the auto-redirect so the user has time to download the receipt.
     } catch (err) {
       setError(
         err instanceof Error
@@ -227,11 +234,34 @@ export default function AdmissionPage() {
               </div>
             )}
 
-            {success && (
-              <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <p className="text-sm text-emerald-600">
-                  ✓ Student registered successfully! Redirecting...
-                </p>
+            {success && submittedData && (
+              <div className="mb-6 p-6 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">
+                    ✓ Student registered successfully!
+                  </p>
+                  <p className="text-sm text-emerald-600 mt-1">
+                    You can now download the payment receipt.
+                  </p>
+                </div>
+                
+                <PDFDownloadLink
+                  document={
+                    <ReceiptPDF
+                      receiptNumber={submittedData.moneyReceiptNumber || "N/A"}
+                      studentId={submittedData.studentId}
+                      name={submittedData.name}
+                      amountPaid={parseFloat(submittedData.amountPaid) || 0}
+                      totalAgreedFee={parseFloat(submittedData.totalAgreedFee) || 13000}
+                      date={submittedData.date}
+                      existingPaidAmount={submittedData.existingPaidAmount}
+                    />
+                  }
+                  fileName={`Receipt_${submittedData.studentId}_${submittedData.moneyReceiptNumber || "N/A"}.pdf`}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all whitespace-nowrap shadow-sm"
+                >
+                  {({ loading }) => (loading ? "Generating PDF..." : "Download Receipt")}
+                </PDFDownloadLink>
               </div>
             )}
 
@@ -425,9 +455,10 @@ export default function AdmissionPage() {
                   name="totalAgreedFee"
                   value={formData.totalAgreedFee || ""}
                   onChange={handleInputChange}
+                  onKeyDown={(e) => { if (e.key === '.' || e.key === '-') e.preventDefault(); }}
                   placeholder="Enter total agreed fee"
-                  step="100"
-                  min="1000"
+                  step="1"
+                  min="0"
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />
                 <p className="text-xs text-slate-500 mt-1">Default: ৳13,000</p>
@@ -443,8 +474,9 @@ export default function AdmissionPage() {
                   name="amountPaid"
                   value={formData.amountPaid || ""}
                   onChange={handleInputChange}
+                  onKeyDown={(e) => { if (e.key === '.' || e.key === '-') e.preventDefault(); }}
                   placeholder="Enter amount"
-                  step="100"
+                  step="1"
                   min="0"
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />

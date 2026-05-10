@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, Search, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { ReceiptPDF } from "@/components/ReceiptPDF";
 
 interface FoundStudent {
   _id: string;
@@ -39,9 +41,9 @@ export default function AddPaymentModal({
   );
 
   // ── Payment state ───────────────────────────────────────────────────────────
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [amount, setAmount] = useState<"2000" | "3000" | "custom">("2000");
   const [customAmount, setCustomAmount] = useState("");
   const [receiptNo, setReceiptNo] = useState("");
@@ -56,7 +58,7 @@ export default function AddPaymentModal({
       setSearchInput("");
       setSearchError(null);
       setError(null);
-      setSuccess(false);
+      setIsSuccess(false);
       setAmount("2000");
       setCustomAmount("");
       setReceiptNo("");
@@ -133,7 +135,7 @@ export default function AddPaymentModal({
       return;
     }
 
-    setLoading(true);
+    setIsSubmitting(true);
 
     try {
       const response = await fetch("/api/students", {
@@ -153,18 +155,13 @@ export default function AddPaymentModal({
         return;
       }
 
-      setSuccess(true);
-
-      // Auto-close after 1.5 s and refresh parent list
-      setTimeout(() => {
-        setSuccess(false);
-        onPaymentAdded?.();
-        onClose();
-      }, 1500);
+      setIsSuccess(true);
+      onPaymentAdded?.(); // Refresh the list in the background
+      // Note: Removed auto-close so the user can download the receipt
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -175,6 +172,7 @@ export default function AddPaymentModal({
         <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">Collect Fee</h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
           >
@@ -294,108 +292,151 @@ export default function AddPaymentModal({
                   <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
-              {success && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                  <p className="text-sm text-emerald-700">
-                    ✓ Payment recorded successfully!
-                  </p>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Quick Amount Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Select Amount
-                  </label>
-                  <div className="space-y-2">
-                    {(["2000", "3000", "custom"] as const).map((val) => (
-                      <label
-                        key={val}
-                        className="flex items-center p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
-                      >
-                        <input
-                          type="radio"
-                          value={val}
-                          checked={amount === val}
-                          onChange={() => setAmount(val)}
-                          className="mr-3 accent-indigo-600"
-                        />
-                        <span className="text-sm text-slate-700">
-                          {val === "custom" ? "Custom Amount" : `৳${parseInt(val).toLocaleString()}`}
-                        </span>
-                      </label>
-                    ))}
+              {isSuccess ? (
+                <div className="flex flex-col items-center justify-center py-6 space-y-4">
+                  <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center mb-2">
+                    <CheckCircle2 size={24} className="text-emerald-600" />
                   </div>
+                  <h3 className="text-lg font-medium text-slate-900">Payment Recorded</h3>
+                  <p className="text-sm text-slate-500 text-center mb-2">
+                    ৳{paymentAmount.toLocaleString()} has been added to {activeStudent.name}&apos;s account.
+                  </p>
+                  
+                  <PDFDownloadLink
+                    document={
+                      <ReceiptPDF
+                        receiptNumber={receiptNo || "N/A"}
+                        studentId={activeStudent.studentId}
+                        name={activeStudent.name}
+                        amountPaid={paymentAmount}
+                        totalAgreedFee={activeStudent.totalAgreedFee}
+                        date={new Date().toLocaleDateString("en-GB")}
+                        existingPaidAmount={activeStudent.amountPaid}
+                        transactionType="Due Payment"
+                      />
+                    }
+                    fileName={`Receipt_${activeStudent.studentId}_${receiptNo || "N/A"}.pdf`}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-all shadow-sm"
+                  >
+                    {({ loading }) => (loading ? "Preparing PDF..." : "Download Money Receipt")}
+                  </PDFDownloadLink>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSuccess(false);
+                      onClose();
+                    }}
+                    className="w-full px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-all"
+                  >
+                    Close
+                  </button>
                 </div>
-
-                {/* Custom Amount */}
-                {amount === "custom" && (
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Quick Amount Selection */}
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Enter Amount (৳)
+                      Select Amount
+                    </label>
+                    <div className="space-y-2">
+                      {(["2000", "3000", "custom"] as const).map((val) => (
+                        <label
+                          key={val}
+                          className="flex items-center p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
+                        >
+                          <input
+                            type="radio"
+                            value={val}
+                            checked={amount === val}
+                            onChange={() => setAmount(val)}
+                            className="mr-3 accent-indigo-600"
+                          />
+                          <span className="text-sm text-slate-700">
+                            {val === "custom" ? "Custom Amount" : `৳${parseInt(val).toLocaleString()}`}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Amount */}
+                  {amount === "custom" && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Enter Amount (৳)
+                      </label>
+                      <input
+                        type="number"
+                        value={customAmount}
+                        onChange={(e) => setCustomAmount(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === '.' || e.key === '-') e.preventDefault(); }}
+                        placeholder="0"
+                        step="1"
+                        min="0"
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      />
+                    </div>
+                  )}
+
+                  {/* Receipt Number */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Receipt Number <span className="text-rose-500">*</span>
                     </label>
                     <input
-                      type="number"
-                      value={customAmount}
-                      onChange={(e) => setCustomAmount(e.target.value)}
-                      placeholder="0"
-                      step="100"
-                      min="1"
+                      type="text"
+                      value={receiptNo}
+                      onChange={(e) => setReceiptNo(e.target.value)}
+                      placeholder="e.g., R12345"
                       className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                     />
                   </div>
-                )}
 
-                {/* Receipt Number */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Receipt Number <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={receiptNo}
-                    onChange={(e) => setReceiptNo(e.target.value)}
-                    placeholder="e.g., R12345"
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  />
-                </div>
+                  {/* Amount preview */}
+                  {!isNaN(paymentAmount) && paymentAmount > 0 && (
+                    <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-center">
+                      <p className="text-xs text-indigo-600">Payment Amount</p>
+                      <p className="text-lg font-semibold text-indigo-900">
+                        ৳{paymentAmount.toLocaleString()}
+                      </p>
+                    </div>
+                  )}
 
-                {/* Amount preview */}
-                {!isNaN(paymentAmount) && paymentAmount > 0 && (
-                  <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-center">
-                    <p className="text-xs text-indigo-600">Payment Amount</p>
-                    <p className="text-lg font-semibold text-indigo-900">
-                      ৳{paymentAmount.toLocaleString()}
-                    </p>
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={isSubmitting}
+                      className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || isSuccess}
+                      className="flex-1 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        "Add Payment"
+                      )}
+                    </button>
                   </div>
-                )}
-
-                {/* Buttons */}
-                <div className="flex gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    disabled={loading}
-                    className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading || success}
-                    className="flex-1 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-all disabled:opacity-50"
-                  >
-                    {loading ? "Saving..." : "Add Payment"}
-                  </button>
-                </div>
-              </form>
+                </form>
+              )}
             </>
           )}
 
           {/* PAID student — only show close */}
           {activeStudent && activeStudent.status === "PAID" && (
             <button
+              type="button"
               onClick={onClose}
               className="w-full px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-all"
             >
