@@ -117,11 +117,14 @@ export default function DashboardPage() {
       const result = await response.json().catch(() => null);
 
       if (!response.ok) {
-        setTestSmsError(result?.error || "Failed to send test SMS");
+        const providerMessage = result?.error_message || result?.error || result?.raw || null;
+        setTestSmsError(providerMessage || "Failed to send test SMS");
         return;
       }
 
-      setTestSmsSuccess("Test SMS sent successfully");
+      // Prefer provider success message, fallback to generic
+      const successMessage = result?.message || result?.success_message || "Test SMS sent successfully";
+      setTestSmsSuccess(successMessage);
     } catch (err) {
       setTestSmsError(err instanceof Error ? err.message : "Failed to send test SMS");
     } finally {
