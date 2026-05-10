@@ -7,6 +7,8 @@ interface FoundStudent {
   _id: string;
   studentId: string;
   name: string;
+  phone?: string;
+  year?: "1st" | "2nd";
   formNumber: string;
   totalAgreedFee: number;
   amountPaid: number;
@@ -228,14 +230,18 @@ export default function AddPaymentModal({
               }`}
             >
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-semibold text-slate-800">
                     {activeStudent.name}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    ID: {activeStudent.studentId} &nbsp;·&nbsp; Form:{" "}
-                    {activeStudent.formNumber}
+                    ID: {activeStudent.studentId} &nbsp;·&nbsp; Year: {activeStudent.year}
                   </p>
+                  {activeStudent.phone && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Phone: {activeStudent.phone}
+                    </p>
+                  )}
                 </div>
                 <CheckCircle2 size={18} className="text-indigo-500 mt-0.5 shrink-0" />
               </div>
