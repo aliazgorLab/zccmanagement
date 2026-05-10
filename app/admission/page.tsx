@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -104,16 +103,17 @@ export default function AdmissionPage() {
   // Auto-fill form when existing student is found
   useEffect(() => {
     if (existingStudent) {
+
       setFormData((prev) => ({
         ...prev,
         name: String(existingStudent.name || ""),
         phone: String(existingStudent.phone || ""),
         year: existingStudent.year || "1st",
         totalAgreedFee: String(existingStudent.totalAgreedFee || "13000"),
+        formNumber: String(existingStudent.studentId || ""),
       }));
     }
   }, [existingStudent]);
-
   const handleYearChange = (year: "1st" | "2nd") => {
     setFormData((prev) => ({
       ...prev,
@@ -339,10 +339,13 @@ export default function AdmissionPage() {
                       key={year}
                       type="button"
                       onClick={() => handleYearChange(year)}
+                      disabled={existingStudent !== null} // Disable year selection
                       className={`px-6 py-2 rounded-md font-medium transition-all text-sm ${
                         formData.year === year
                           ? "bg-white text-indigo-600 shadow-sm border border-slate-200"
                           : "text-slate-600 hover:text-slate-900"
+                      } ${
+                        existingStudent ? "opacity-50 cursor-not-allowed" : ""
                       }`}
                     >
                       {year} Year
@@ -363,7 +366,10 @@ export default function AdmissionPage() {
                     value={formData.formNumber || ""}
                     onChange={handleInputChange}
                     placeholder="e.g., F12345"
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    readOnly={existingStudent !== null} // Make formNumber readOnly
+                    className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
+                      existingStudent ? "bg-slate-50 text-slate-600 cursor-not-allowed" : ""
+                    }`}
                   />
                 </div>
 
