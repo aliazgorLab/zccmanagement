@@ -34,13 +34,13 @@ type BulkSmsResponse = {
  */
 export async function sendSMS(phone: string, message: string): Promise<BulkSmsResponse> {
   const apiKey = process.env.BULKSMSBD_API_KEY;
-  const apiSecret = process.env.BULKSMSBD_SECRET_KEY;
+  const apiSecret = process.env.BULKSMSBD_API_SECRET;
   const senderId = process.env.BULKSMSBD_SENDER_ID;
   const normalizedPhone = normalizeBangladeshiNumber(phone);
 
   if (!apiKey || !apiSecret || !senderId) {
     console.error(
-      "[SMS] BULKSMSBD_API_KEY, BULKSMSBD_SECRET_KEY, or BULKSMSBD_SENDER_ID is not set in environment variables."
+      "[SMS] BULKSMSBD_API_KEY, BULKSMSBD_API_SECRET, or BULKSMSBD_SENDER_ID is not set in environment variables."
     );
     return { rawBody: "missing-environment-variables" };
   }
@@ -48,9 +48,9 @@ export async function sendSMS(phone: string, message: string): Promise<BulkSmsRe
   const payload = {
     api_key: apiKey,
     api_secret: apiSecret,
-    sender_id: senderId,
+    senderid: senderId,
     message,
-    mobile_no: normalizedPhone,
+    number: normalizedPhone,
   };
 
   const response = await fetch(BULKSMSBD_API_URL, {
