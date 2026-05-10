@@ -248,13 +248,13 @@ export default function AdmissionPage() {
                 <PDFDownloadLink
                   document={
                     <ReceiptPDF
-                      receiptNumber={submittedData.moneyReceiptNumber || "N/A"}
+                      studentName={submittedData.name}
                       studentId={submittedData.studentId}
-                      name={submittedData.name}
                       amountPaid={parseFloat(submittedData.amountPaid) || 0}
-                      totalAgreedFee={parseFloat(submittedData.totalAgreedFee) || 13000}
+                      remainingDue={Math.max((parseFloat(submittedData.totalAgreedFee) || 13000) - ((submittedData.existingPaidAmount || 0) + (parseFloat(submittedData.amountPaid) || 0)), 0)}
                       date={submittedData.date}
-                      existingPaidAmount={submittedData.existingPaidAmount}
+                      receiptNumber={submittedData.moneyReceiptNumber || "N/A"}
+                      paymentType="Admission"
                     />
                   }
                   fileName={`Receipt_${submittedData.studentId}_${submittedData.moneyReceiptNumber || "N/A"}.pdf`}

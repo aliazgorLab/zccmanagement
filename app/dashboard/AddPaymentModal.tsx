@@ -305,14 +305,13 @@ export default function AddPaymentModal({
                   <PDFDownloadLink
                     document={
                       <ReceiptPDF
-                        receiptNumber={receiptNo || "N/A"}
+                        studentName={activeStudent.name}
                         studentId={activeStudent.studentId}
-                        name={activeStudent.name}
                         amountPaid={paymentAmount}
-                        totalAgreedFee={activeStudent.totalAgreedFee}
+                        remainingDue={Math.max(activeStudent.totalAgreedFee - (activeStudent.amountPaid + paymentAmount), 0)}
                         date={new Date().toLocaleDateString("en-GB")}
-                        existingPaidAmount={activeStudent.amountPaid}
-                        transactionType="Due Payment"
+                        receiptNumber={receiptNo || "N/A"}
+                        paymentType="Due Payment"
                       />
                     }
                     fileName={`Receipt_${activeStudent.studentId}_${receiptNo || "N/A"}.pdf`}

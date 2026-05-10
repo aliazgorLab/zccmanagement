@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         : year === "2nd" && paymentType === "Full"
           ? 10000
           : 13000;
-    
+
     // Calculate totalFee based on discount
     let totalFee = totalAgreedFee;
     if (year === "2nd" && paymentType === "Full") {
@@ -98,9 +98,9 @@ export async function POST(request: NextRequest) {
     } else {
       totalFee = totalAgreedFee;
     }
-    
+
     const totalPaid = Number(parsedAmountPaid);
-    
+
     // Create payment entry with today's date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -139,13 +139,17 @@ export async function POST(request: NextRequest) {
       // Save to database
       savedStudent = await newStudent.save();
 
-      // Fire-and-forget SMS — does not affect the response if it fails
-      void sendPaymentSMS(
-        String(phone).trim(),
-        String(name).trim(),
-        parsedAmountPaid,
-        remainingDue
-      );
+      try {
+        await sendPaymentSMS(
+          phone ? String(phone).trim() : "", // Safely handle missing phone
+          String(name).trim(),
+          parsedAmountPaid,
+          remainingDue,
+          String(studentId).trim()
+        );
+      } catch (smsError) {
+        console.error("SMS sending failed, but continuing response:", smsError);
+      }
     } catch (error) {
       console.error("FULL ERROR:", error);
       return NextResponse.json(
@@ -240,7 +244,7 @@ export async function PUT(request: NextRequest) {
     // Add the payment to the payments array
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     student.payments.push({
       amount: parsedAmount,
       date: today,
@@ -253,13 +257,17 @@ export async function PUT(request: NextRequest) {
 
     await student.save();
 
-    // Fire-and-forget SMS — does not affect the response if it fails
-    void sendPaymentSMS(
-      String(student.phone).trim(),
-      String(student.name).trim(),
-      parsedAmount,
-      Math.max(remainingDue, 0)
-    );
+    try {
+      await sendPaymentSMS(
+        student.phone ? String(student.phone).trim() : "", // Safely handle missing phone
+        String(student.name).trim(),
+        parsedAmount,
+        Math.max(remainingDue, 0),
+        student.studentId ? String(student.studentId).trim() : ""
+      );
+    } catch (smsError) {
+      console.error("SMS sending failed, but continuing response:", smsError);
+    }
 
     return NextResponse.json(
       {

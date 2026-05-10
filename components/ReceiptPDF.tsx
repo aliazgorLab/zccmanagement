@@ -1,223 +1,210 @@
 import React from "react";
 import { Page, Text, View, Document, StyleSheet, Font } from "@react-pdf/renderer";
 
-// We can register a standard web font for a cleaner look if desired, 
-// but built-in fonts (Helvetica) work well for a minimalist Stripe-like feel.
-
+// Register custom font if desired, but Helvetica is built-in and looks clean.
 const styles = StyleSheet.create({
   page: {
-    padding: 50,
+    padding: 40,
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
   },
+  // --- Header ---
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 40,
+    alignItems: "flex-end",
     borderBottom: "1px solid #e2e8f0",
     paddingBottom: 20,
-  },
-  clinicInfo: {
-    flexDirection: "column",
+    marginBottom: 30,
   },
   clinicName: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#0f172a",
-    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   clinicSubtitle: {
     fontSize: 10,
     color: "#64748b",
-  },
-  receiptTitle: {
-    fontSize: 12,
-    color: "#64748b",
+    marginTop: 4,
     textTransform: "uppercase",
     letterSpacing: 1,
-    marginBottom: 4,
-    textAlign: "right",
   },
-  receiptNumber: {
-    fontSize: 16,
-    color: "#0f172a",
-    fontWeight: "bold",
-    textAlign: "right",
+  paymentTypeBadge: {
+    backgroundColor: "#f1f5f9",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
   },
-  section: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
+  paymentTypeText: {
     fontSize: 10,
-    color: "#64748b",
+    color: "#334155",
+    fontWeight: "bold",
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 10,
   },
-  row: {
+
+  // --- Body ---
+  bodyContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 40,
+  },
+  column: {
+    flexDirection: "column",
+    width: "48%",
   },
   label: {
-    fontSize: 12,
-    color: "#64748b",
+    fontSize: 10,
+    color: "#94a3b8",
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   value: {
     fontSize: 12,
-    color: "#0f172a",
+    color: "#1e293b",
+    marginBottom: 16,
     fontWeight: "bold",
   },
-  totalSection: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTop: "1px solid #e2e8f0",
+
+  // --- Financial Breakdown ---
+  financialTable: {
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    overflow: "hidden",
+    marginBottom: 40,
   },
-  totalRow: {
+  financialRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    alignItems: "center",
+    padding: 16,
   },
-  totalLabel: {
-    fontSize: 14,
+  borderBottom: {
+    borderBottom: "1px solid #e2e8f0",
+  },
+  amountPaidRow: {
+    backgroundColor: "#f8fafc",
+  },
+  amountPaidLabel: {
+    fontSize: 12,
+    color: "#334155",
+    fontWeight: "bold",
+  },
+  amountPaidValue: {
+    fontSize: 24,
     color: "#0f172a",
     fontWeight: "bold",
   },
-  totalValue: {
+  remainingLabel: {
+    fontSize: 12,
+    color: "#64748b",
+  },
+  remainingValue: {
     fontSize: 14,
-    color: "#0f172a",
+    color: "#475569",
     fontWeight: "bold",
   },
-  dueRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-    paddingTop: 8,
-    borderTop: "1px dashed #cbd5e1",
-  },
-  dueLabel: {
-    fontSize: 12,
-    color: "#ef4444",
-  },
-  dueValue: {
-    fontSize: 12,
-    color: "#ef4444",
-    fontWeight: "bold",
-  },
+
+  // --- Footer ---
   footer: {
     position: "absolute",
-    bottom: 50,
-    left: 50,
-    right: 50,
-    flexDirection: "column",
-    alignItems: "center",
+    bottom: 40,
+    left: 40,
+    right: 40,
     borderTop: "1px solid #e2e8f0",
-    paddingTop: 20,
+    paddingTop: 16,
+    flexDirection: "row",
+    justifyContent: "center",
   },
   footerText: {
-    fontSize: 10,
+    fontSize: 9,
     color: "#94a3b8",
   },
 });
 
-interface ReceiptPDFProps {
-  receiptNumber: string;
+export interface ReceiptPDFProps {
+  studentName: string;
   studentId: string;
-  name: string;
   amountPaid: number;
-  totalAgreedFee: number;
+  remainingDue: number;
   date: string;
-  existingPaidAmount?: number;
-  transactionType?: string; // e.g. "Admission" or "Due Payment"
+  receiptNumber: string;
+  paymentType: string;
 }
 
 export const ReceiptPDF: React.FC<ReceiptPDFProps> = ({
-  receiptNumber,
+  studentName,
   studentId,
-  name,
   amountPaid,
-  totalAgreedFee,
+  remainingDue,
   date,
-  existingPaidAmount = 0,
-  transactionType = "Payment Receipt",
+  receiptNumber,
+  paymentType,
 }) => {
-  // Calculate remaining due
-  const totalPaidSoFar = existingPaidAmount + amountPaid;
-  const remainingDue = Math.max(totalAgreedFee - totalPaidSoFar, 0);
-
   return (
     <Document>
       <Page size="A5" style={styles.page}>
+        
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.clinicInfo}>
-            <Text style={styles.clinicName}>Zahids Chem Clinic</Text>
-            <Text style={styles.clinicSubtitle}>{transactionType}</Text>
-          </View>
           <View>
-            <Text style={styles.receiptTitle}>Receipt</Text>
-            <Text style={styles.receiptNumber}>#{receiptNumber}</Text>
+            <Text style={styles.clinicName}>Zahid&apos;s Chem Clinic</Text>
+            <Text style={styles.clinicSubtitle}>Official Money Receipt</Text>
+          </View>
+          <View style={styles.paymentTypeBadge}>
+            <Text style={styles.paymentTypeText}>{paymentType}</Text>
           </View>
         </View>
 
-        {/* Student Details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Billed To</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Student Name</Text>
-            <Text style={styles.value}>{name}</Text>
+        {/* Body Layout: Two Columns */}
+        <View style={styles.bodyContainer}>
+          {/* Left Column: Student Info */}
+          <View style={styles.column}>
+            <View>
+              <Text style={styles.label}>Student Name</Text>
+              <Text style={styles.value}>{studentName}</Text>
+            </View>
+            <View>
+              <Text style={styles.label}>Student ID</Text>
+              <Text style={styles.value}>{studentId}</Text>
+            </View>
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Student ID</Text>
-            <Text style={styles.value}>{studentId}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Date</Text>
-            <Text style={styles.value}>{date}</Text>
+
+          {/* Right Column: Transaction Details */}
+          <View style={[styles.column, { alignItems: "flex-end" }]}>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={styles.label}>Date</Text>
+              <Text style={styles.value}>{date}</Text>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={styles.label}>Receipt #</Text>
+              <Text style={styles.value}>{receiptNumber}</Text>
+            </View>
           </View>
         </View>
 
-        {/* Payment Details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Summary</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Total Agreed Fee</Text>
-            <Text style={styles.value}>৳ {totalAgreedFee.toLocaleString()}</Text>
+        {/* Financial Breakdown */}
+        <View style={styles.financialTable}>
+          <View style={[styles.financialRow, styles.borderBottom, styles.amountPaidRow]}>
+            <Text style={styles.amountPaidLabel}>Amount Paid</Text>
+            <Text style={styles.amountPaidValue}>Tk. {amountPaid.toLocaleString()}</Text>
           </View>
-          {existingPaidAmount > 0 && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Previously Paid</Text>
-              <Text style={styles.value}>৳ {existingPaidAmount.toLocaleString()}</Text>
-            </View>
-          )}
-
-          <View style={styles.totalSection}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Amount Paid Today</Text>
-              <Text style={styles.totalValue}>৳ {amountPaid.toLocaleString()}</Text>
-            </View>
-
-            {remainingDue > 0 && (
-              <View style={styles.dueRow}>
-                <Text style={styles.dueLabel}>Remaining Due</Text>
-                <Text style={styles.dueValue}>৳ {remainingDue.toLocaleString()}</Text>
-              </View>
-            )}
-            
-            {remainingDue === 0 && (
-              <View style={[styles.dueRow, { borderTopColor: "#10b981" }]}>
-                <Text style={[styles.dueLabel, { color: "#10b981" }]}>Status</Text>
-                <Text style={[styles.dueValue, { color: "#10b981" }]}>Fully Paid</Text>
-              </View>
-            )}
+          <View style={styles.financialRow}>
+            <Text style={styles.remainingLabel}>Remaining Balance</Text>
+            <Text style={styles.remainingValue}>
+              {remainingDue > 0 ? `Tk. ${remainingDue.toLocaleString()}` : "Tk. 0 (Fully Paid)"}
+            </Text>
           </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Thank you for choosing Zahids Chem Clinic!</Text>
+          <Text style={styles.footerText}>
+            Generated automatically by ZCC Management System. For support, call 01841783983.
+          </Text>
         </View>
+
       </Page>
     </Document>
   );
