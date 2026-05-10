@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Printer, Calendar } from "lucide-react";
+import { Printer, Calendar, SendHorizonal, Loader2 } from "lucide-react";
 import DailyReport from "./DailyReport";
 
 interface SummaryData {
@@ -45,6 +45,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [summaryData, setSummaryData] = useState<SummaryData>(emptySummary);
   const [error, setError] = useState<string | null>(null);
+  const [testPhone, setTestPhone] = useState("");
+  const [testSmsLoading, setTestSmsLoading] = useState(false);
+  const [testSmsError, setTestSmsError] = useState<string | null>(null);
+  const [testSmsSuccess, setTestSmsSuccess] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split("T")[0];
@@ -88,6 +92,43 @@ export default function DashboardPage() {
     window.print();
   };
 
+  const handleTestSms = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setTestSmsError(null);
+    setTestSmsSuccess(null);
+
+    const phone = testPhone.trim();
+    if (!phone) {
+      setTestSmsError("Enter a phone number first");
+      return;
+    }
+
+    setTestSmsLoading(true);
+
+    try {
+      const response = await fetch("/api/admin/test-sms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phone }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setTestSmsError(result?.error || "Failed to send test SMS");
+        return;
+      }
+
+      setTestSmsSuccess("Test SMS sent successfully");
+    } catch (err) {
+      setTestSmsError(err instanceof Error ? err.message : "Failed to send test SMS");
+    } finally {
+      setTestSmsLoading(false);
+    }
+  };
+
   return (
     <main className="min-h-screen flex-1 bg-slate-50 p-8">
         {/* Header Section */}
@@ -122,6 +163,53 @@ export default function DashboardPage() {
             Generate Daily Report
           </button>
         </div>
+
+        <section className="mb-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                SMS Test
+              </p>
+              <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">
+                Send a quick verification message
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Sends <span className="font-medium text-slate-700">Hello from ZCC</span> to the number below.
+              </p>
+            </div>
+
+            <form onSubmit={handleTestSms} className="flex w-full flex-col gap-3 lg:max-w-xl lg:flex-row lg:items-center">
+              <input
+                type="tel"
+                inputMode="tel"
+                value={testPhone}
+                onChange={(event) => setTestPhone(event.target.value)}
+                placeholder="Enter your phone number"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
+              />
+
+              <button
+                type="submit"
+                disabled={testSmsLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {testSmsLoading ? <Loader2 size={18} className="animate-spin" /> : <SendHorizonal size={18} />}
+                {testSmsLoading ? "Sending..." : "Send test SMS"}
+              </button>
+            </form>
+          </div>
+
+          {(testSmsError || testSmsSuccess) && (
+            <div className="mt-4">
+              {testSmsError && (
+                <p className="text-sm font-medium text-rose-600">{testSmsError}</p>
+              )}
+              {testSmsSuccess && (
+                <p className="text-sm font-medium text-emerald-600">{testSmsSuccess}</p>
+              )}
+            </div>
+          )}
+        </section>
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
