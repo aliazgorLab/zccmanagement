@@ -28,6 +28,11 @@ type BulkSmsResponse = {
   rawBody: string;
 };
 
+function maskCredential(value: string): string {
+  if (!value || value.length < 4) return "***";
+  return value.substring(0, 4) + "***";
+}
+
 /**
  * Low-level helper: sends a single SMS via BulkSMSBD.
  * Returns true on success, false on any failure (network or API).
@@ -45,23 +50,39 @@ export async function sendSMS(phone: string, message: string): Promise<BulkSmsRe
     return { rawBody: "missing-environment-variables" };
   }
 
-  const payload = {
+  // Create form-urlencoded payload (provider may expect this format)
+  const params = new URLSearchParams({
     api_key: apiKey,
     api_secret: apiSecret,
     senderid: senderId,
     message,
     number: normalizedPhone,
-  };
+  });
+
+  // Log masked request for debugging
+  console.log("[SMS] Sending request to BulkSMSBD:", {
+    url: BULKSMSBD_API_URL,
+    method: "POST",
+    contentType: "application/x-www-form-urlencoded",
+    payload: {
+      api_key: maskCredential(apiKey),
+      api_secret: maskCredential(apiSecret),
+      senderid: maskCredential(senderId),
+      message,
+      number: normalizedPhone,
+    },
+  });
 
   const response = await fetch(BULKSMSBD_API_URL, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: JSON.stringify(payload),
+    body: params.toString(),
   });
 
   const text = await response.text();
+  console.log("[SMS] Raw response from BulkSMSBD:", text);
 
   // BulkSMSBD returns a JSON body; a response_code of 202 means success.
   let parsed: { response_code?: number; success_message?: string; error_message?: string };
