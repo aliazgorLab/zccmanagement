@@ -10,6 +10,7 @@ interface FoundStudent {
   studentId: string;
   name: string;
   phone?: string;
+  remarks?: string;
   year?: "1st" | "2nd";
   formNumber: string;
   totalAgreedFee: number;
@@ -134,6 +135,13 @@ export default function AddPaymentModal({
       setError("Please enter a valid amount");
       return;
     }
+    
+    if (paymentAmount % 500 !== 0) {
+      setError(
+        "Payment amount must be in multiples of 500 (e.g., 500, 1000, 1500)"
+      );
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -238,6 +246,11 @@ export default function AddPaymentModal({
                   {activeStudent.phone && (
                     <p className="text-xs text-slate-500 mt-1">
                       Phone: {activeStudent.phone}
+                    </p>
+                  )}
+                  {activeStudent.remarks && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Remarks: {activeStudent.remarks}
                     </p>
                   )}
                 </div>
@@ -371,10 +384,13 @@ export default function AddPaymentModal({
                         onChange={(e) => setCustomAmount(e.target.value)}
                         onKeyDown={(e) => { if (e.key === '.' || e.key === '-') e.preventDefault(); }}
                         placeholder="0"
-                        step="1"
+                        step="500"
                         min="0"
                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                       />
+                      <p className="mt-1 text-xs text-slate-500">
+                        (Must be in multiples of ৳500)
+                      </p>
                     </div>
                   )}
 

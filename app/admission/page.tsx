@@ -33,6 +33,7 @@ export default function AdmissionPage() {
     studentId: "",
     name: "",
     phone: "",
+    remarks: "",
     year: "1st" as "1st" | "2nd",
     formNumber: "",
     moneyReceiptNumber: "",
@@ -41,7 +42,9 @@ export default function AdmissionPage() {
     paymentType: "Partial" as "Partial" | "Full",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -57,6 +60,7 @@ export default function AdmissionPage() {
           ...prev,
           name: "",
           phone: "",
+          remarks: "",
           year: "1st",
         }));
       }
@@ -111,6 +115,7 @@ export default function AdmissionPage() {
         ...prev,
         name: String(existingStudent.name || ""),
         phone: String(existingStudent.phone || ""),
+        remarks: String((existingStudent as any).remarks || ""),
         year: existingStudent.year || "1st",
         totalAgreedFee: String(existingStudent.totalAgreedFee || "13000"),
         formNumber: String(existingStudent.studentId || ""),
@@ -148,6 +153,14 @@ export default function AdmissionPage() {
       setError("Please fill in all required fields (Student ID, Name, Form No, Receipt No, Amount)");
       return;
     }
+    
+    const paymentAmount = Number(formData.amountPaid);
+    if (Number.isFinite(paymentAmount) && paymentAmount % 500 !== 0) {
+      setError(
+        "Payment amount must be in multiples of 500 (e.g., 500, 1000, 1500)"
+      );
+      return;
+    }
 
     setLoading(true);
 
@@ -161,6 +174,7 @@ export default function AdmissionPage() {
           studentId: formData.studentId,
           name: formData.name,
           phone: formData.phone || undefined,
+          remarks: formData.remarks || undefined,
           year: formData.year,
           formNumber: formData.formNumber,
           moneyReceiptNumber: formData.moneyReceiptNumber,
@@ -190,6 +204,7 @@ export default function AdmissionPage() {
         studentId: "",
         name: "",
         phone: "",
+        remarks: "",
         year: "1st",
         formNumber: "",
         moneyReceiptNumber: "",
@@ -476,9 +491,28 @@ export default function AdmissionPage() {
                   onChange={handleInputChange}
                   onKeyDown={(e) => { if (e.key === '.' || e.key === '-') e.preventDefault(); }}
                   placeholder="Enter amount"
-                  step="1"
+                  step="500"
                   min="0"
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  (Must be in multiples of ৳500)
+                </p>
+              </div>
+
+              {/* Remarks / Special Notes */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Remarks / Special Notes
+                  <span className="text-slate-400 font-normal"> (optional)</span>
+                </label>
+                <textarea
+                  name="remarks"
+                  value={formData.remarks || ""}
+                  onChange={handleInputChange}
+                  placeholder="e.g., Full free scholarship granted by Zahid Sir (Merit-based)"
+                  rows={3}
+                  className="w-full min-h-24 resize-y px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />
               </div>
 

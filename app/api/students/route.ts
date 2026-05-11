@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       studentId,
       name,
       phone,
+      remarks,
       year,
       formNumber,
       moneyReceiptNumber,
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
         studentId: String(studentId).trim(),
         name: String(name).trim(),
         phone: phone ? String(phone).trim() : undefined,
+        remarks: String(remarks ?? "").trim(),
         year,
         formNumber: String(formNumber).trim(),
         moneyReceiptNumber: String(moneyReceiptNumber).trim(),
@@ -170,6 +172,7 @@ export async function POST(request: NextRequest) {
           studentId: savedStudent.studentId,
           name: savedStudent.name,
           phone: savedStudent.phone,
+          remarks: savedStudent.remarks,
           year: savedStudent.year,
           formNumber: savedStudent.formNumber,
           moneyReceiptNumber: savedStudent.moneyReceiptNumber,
@@ -241,29 +244,69 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Add the payment to the payments array
+    // Ensure payments array exists for legacy records
+    if (!Array.isArray(student.payments)) {
+      student.payments = [] as any;
+    }
+
+    // Today's date normalized
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    student.payments.push({
-      amount: parsedAmount,
-      date: today,
-      receiptNo: String(receiptNo).trim(),
-    });
+    // Use agreed/actual fee as the single source of truth for due math
+    const targetFee = Number(student.totalAgreedFee || student.totalFee || 0);
 
-    // Update status
-    const remainingDue = (student.totalAgreedFee || 0) - student.payments.reduce((sum: number, p: any) => sum + p.amount, 0);
-    student.status = remainingDue <= 0 ? "PAID" : "DUE";
+    // Determine previous paid amount robustly:
+    // Prefer explicit totalPaid, otherwise derive from targetFee - currentDue when available, else 0
+    const previousPaid = ((): number => {
+      if (student.totalPaid != null && !Number.isNaN(Number(student.totalPaid))) {
+        return Number(student.totalPaid);
+      }
+      if (student.currentDue != null && !Number.isNaN(Number(student.currentDue))) {
+        return Math.max(targetFee - Number(student.currentDue), 0);
+      }
+      // Fallback to sum of payments if present
+      if (Array.isArray(student.payments) && student.payments.length > 0) {
+        return student.payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+      }
+      return 0;
+    })();
 
-    await student.save();
+    const newTotalPaid = previousPaid + parsedAmount;
+    const newDue = Math.max(targetFee - newTotalPaid, 0);
+    const newStatus = newDue <= 0 ? "PAID" : "DUE";
+
+    // Use atomic update to avoid triggering full-document validators on legacy records
+    const updatedStudent = await Student.findByIdAndUpdate(
+      studentId,
+      {
+        $push: {
+          payments: {
+            amount: parsedAmount,
+            date: today,
+            receiptNo: String(receiptNo).trim(),
+          },
+        },
+        $set: {
+          totalPaid: newTotalPaid,
+          currentDue: newDue,
+          status: newStatus,
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedStudent) {
+      return NextResponse.json({ error: "Failed to update student record" }, { status: 500 });
+    }
 
     try {
       await sendPaymentSMS(
-        student.phone ? String(student.phone).trim() : "", // Safely handle missing phone
-        String(student.name).trim(),
+        updatedStudent.phone ? String(updatedStudent.phone).trim() : "", // Safely handle missing phone
+        String(updatedStudent.name).trim(),
         parsedAmount,
-        Math.max(remainingDue, 0),
-        student.studentId ? String(student.studentId).trim() : ""
+        newDue,
+        updatedStudent.studentId ? String(updatedStudent.studentId).trim() : ""
       );
     } catch (smsError) {
       console.error("SMS sending failed, but continuing response:", smsError);
@@ -274,12 +317,12 @@ export async function PUT(request: NextRequest) {
         success: true,
         message: "Payment added successfully",
         student: {
-          id: student._id,
-          name: student.name,
-          totalAgreedFee: student.totalAgreedFee,
-          totalPaid: student.payments.reduce((sum: number, p: any) => sum + p.amount, 0),
-          payments: student.payments,
-          status: student.status,
+          id: updatedStudent._id,
+          name: updatedStudent.name,
+          totalAgreedFee: updatedStudent.totalAgreedFee,
+          totalPaid: updatedStudent.totalPaid ?? newTotalPaid,
+          payments: updatedStudent.payments || [],
+          status: updatedStudent.status,
         },
       },
       { status: 200 }

@@ -14,6 +14,7 @@ export interface StudentDocument extends Document {
   studentId: string;
   name: string;
   phone?: string;
+  remarks?: string;
   year: StudentYear;
   formNumber: string;
   moneyReceiptNumber: string;
@@ -45,6 +46,11 @@ const StudentSchema = new Schema<StudentDocument>(
     phone: {
       type: String,
       required: false,
+      trim: true,
+    },
+    remarks: {
+      type: String,
+      default: "",
       trim: true,
     },
     year: {

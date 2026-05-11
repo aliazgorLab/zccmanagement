@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         studentId: (student.studentId ?? "").toString(),
         name: resolvedName,
         phone: student.phone ?? "",
+        remarks: student.remarks ?? "",
         year: student.year ?? "2nd",
         formNumber: (student.formNumber ?? student.studentId ?? "").toString(),
         totalAgreedFee: totalAgreedFee,

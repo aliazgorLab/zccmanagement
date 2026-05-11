@@ -61,26 +61,57 @@ export async function PATCH(
       );
     }
 
-    // Update the fee
-    student.totalAgreedFee = parsedFee;
-    student.totalFee = parsedFee;
-    
-    // Calculate new status
-    const totalPaid = (student.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
-    const remainingDue = Math.max(parsedFee - totalPaid, 0);
-    student.status = remainingDue <= 0 ? "PAID" : "DUE";
+    // Existing agreed/actual fee used to derive historical paid amount for legacy docs
+    const existingTargetFee = Number(student.totalAgreedFee || student.totalFee || 0);
 
-    await student.save();
+    // Compute current totalPaid robustly:
+    // Prefer explicit totalPaid, otherwise derive from existingTargetFee - currentDue, otherwise fall back to sum(payments)
+    const previousPaid = ((): number => {
+      if (student.totalPaid != null && !Number.isNaN(Number(student.totalPaid))) {
+        return Number(student.totalPaid);
+      }
+      if (student.currentDue != null && !Number.isNaN(Number(student.currentDue))) {
+        return Math.max(existingTargetFee - Number(student.currentDue), 0);
+      }
+      if (Array.isArray(student.payments) && student.payments.length > 0) {
+        return student.payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+      }
+      return 0;
+    })();
+
+    // For fee updates, targetFee is the newly requested fee
+    const targetFee = Number(parsedFee || student.totalAgreedFee || student.totalFee || 0);
+    const newTotalPaid = previousPaid;
+    const newDue = Math.max(targetFee - newTotalPaid, 0);
+    const newStatus = newDue <= 0 ? "PAID" : "DUE";
+
+    // Use findByIdAndUpdate to avoid triggering full-document validators for legacy records
+    const updated = await Student.findByIdAndUpdate(
+      studentId,
+      {
+        $set: {
+          totalAgreedFee: parsedFee,
+          totalFee: parsedFee,
+          currentDue: newDue,
+          status: newStatus,
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return NextResponse.json({ error: "Failed to update student fee" }, { status: 500 });
+    }
 
     return NextResponse.json(
       {
         success: true,
         message: "Total agreed fee updated successfully",
         student: {
-          id: student._id,
-          name: student.name,
-          totalAgreedFee: student.totalAgreedFee,
-          status: student.status,
+          id: updated._id,
+          name: updated.name,
+          totalAgreedFee: updated.totalAgreedFee,
+          status: updated.status,
         },
       },
       { status: 200 }

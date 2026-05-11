@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
         studentId: student.studentId,
         name: student.name,
         phone: student.phone ?? "",
+        remarks: student.remarks ?? "",
         year: student.year ?? "1st",
         formNumber: student.formNumber,
         totalAgreedFee,
