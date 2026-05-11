@@ -52,9 +52,9 @@ export async function GET(request: NextRequest) {
 
     const result = await Student.bulkWrite(bulkOps, { ordered: false });
     // bulkWrite result has modifiedCount in modern drivers
-    const migrated = (result && (result.modifiedCount ?? (result.nModified || 0))) || 0;
+    const fixedCount = result ? (result.modifiedCount || 0) : 0;
 
-    return NextResponse.json({ success: true, message: "Legacy migration completed", total: students.length, migrated, details: result }, { status: 200 });
+    return NextResponse.json({ success: true, message: "Legacy migration completed", total: students.length, migrated: fixedCount, details: result }, { status: 200 });
   } catch (error) {
     console.error("[migrate-legacy] Error:", error);
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : String(error) }, { status: 500 });
