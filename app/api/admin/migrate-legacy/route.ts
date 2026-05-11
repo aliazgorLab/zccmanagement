@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
     const students = await Student.find({}, { totalPaid: 1, totalFee: 1, totalAgreedFee: 1, currentDue: 1, payments: 1, remarks: 1 }).lean();
 
     const bulkOps: any[] = [];
-    let fixedCount = 0;
 
     for (const s of students) {
       const updates: any = {};
@@ -52,9 +51,9 @@ export async function GET(request: NextRequest) {
 
     const result = await Student.bulkWrite(bulkOps, { ordered: false });
     // bulkWrite result has modifiedCount in modern drivers
-    const fixedCount = result ? (result.modifiedCount || 0) : 0;
+    const migratedDocumentsCount = result ? (result.modifiedCount || 0) : 0;
 
-    return NextResponse.json({ success: true, message: "Legacy migration completed", total: students.length, migrated: fixedCount, details: result }, { status: 200 });
+    return NextResponse.json({ success: true, message: "Legacy migration completed", total: students.length, migrated: migratedDocumentsCount, details: result }, { status: 200 });
   } catch (error) {
     console.error("[migrate-legacy] Error:", error);
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : String(error) }, { status: 500 });
