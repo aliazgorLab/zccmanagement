@@ -49,20 +49,12 @@ export async function GET(request: NextRequest) {
     }).lean();
 
     const totalInflow = students.reduce((sum: number, student: any) => {
-      const admissionToday = isSameDay(student.createdAt);
       const paymentEntries = Array.isArray(student.payments) ? student.payments : [];
 
-      let paidToday = 0;
-
-      if (admissionToday && paymentEntries.length > 0) {
-        // For admissions, count the initial payment that came with the admission
-        paidToday = Number(paymentEntries[0]?.amount || 0);
-      } else {
-        // For legacy/older students, count only today's due payment(s)
-        paidToday = paymentEntries
-          .filter((p: any) => isSameDay(p?.date))
-          .reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
-      }
+      // Count ALL payments made today to ensure EXACT raw input value is captured without hidden alterations
+      const paidToday = paymentEntries
+        .filter((p: any) => isSameDay(p?.date))
+        .reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
 
       return sum + paidToday;
     }, 0);
@@ -76,22 +68,18 @@ export async function GET(request: NextRequest) {
       const admissionToday = isSameDay(student.createdAt);
       const totalPaid = paymentEntries.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
       const totalAgreedFee = student.totalAgreedFee ?? student.totalFee ?? student.courseFee ?? 0;
-      const currentDue = Number(student.currentDue ?? Math.max(totalAgreedFee - totalPaid, 0));
-
-      let paidToday = 0;
+      
+      const todaysPayments = paymentEntries.filter((p: any) => isSameDay(p?.date));
+      const paidToday = todaysPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+      
       let receiptNumber = student.moneyReceiptNumber ?? "-";
-
-      if (admissionToday) {
-        const firstPayment = paymentEntries[0];
-        paidToday = Number(firstPayment?.amount || 0);
-        receiptNumber = firstPayment?.receiptNo ?? receiptNumber;
-      } else {
-        const todaysPayments = paymentEntries.filter((p: any) => isSameDay(p?.date));
-        paidToday = todaysPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-        receiptNumber = todaysPayments[0]?.receiptNo ?? receiptNumber;
+      if (todaysPayments.length > 0) {
+        receiptNumber = todaysPayments[todaysPayments.length - 1]?.receiptNo ?? receiptNumber;
       }
 
-      const remainingDue = currentDue;
+      // Ensure Remaining Due is calculated purely as: totalFee - paidToday for new admissions
+      const currentDue = Number(student.currentDue ?? Math.max(totalAgreedFee - totalPaid, 0));
+      const remainingDue = admissionToday ? Math.max(totalAgreedFee - paidToday, 0) : currentDue;
       
       return {
         _id: student._id?.toString(),
