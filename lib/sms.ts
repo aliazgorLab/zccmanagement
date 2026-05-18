@@ -11,7 +11,7 @@ function normalizeBangladeshiNumber(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.startsWith("880")) return digits;
   if (digits.startsWith("0")) return `88${digits}`;
-  return `88${digits}`;
+  return `880${digits}`;
 }
 
 function maskCredential(value: string): string {
@@ -41,7 +41,7 @@ export async function sendSMS(
 ): Promise<BulkSmsResponse> {
   const apiKey = process.env.BULKSMSBD_API_KEY?.trim();
   const senderId = process.env.BULKSMSBD_SENDER_ID?.trim();
-  const endpointUrl = process.env.BULKSMSBD_API_URL?.trim() || "https://smsplus.sslwireless.com/api/v3/send-sms";
+  const endpointUrl = "https://smsplus.sslwireless.com/api/v3/send-sms";
 
   const missing: string[] = [];
   if (!apiKey) missing.push("BULKSMSBD_API_KEY");
@@ -53,7 +53,7 @@ export async function sendSMS(
   }
 
   const normalizedPhone = normalizeBangladeshiNumber(phone);
-  const csmsId = `ZCC-${Date.now()}`;
+  const csmsId = `ZCC_${Date.now()}`;
   const bodyPayload = {
     api_token: apiKey!,
     sid: senderId!,
@@ -117,7 +117,7 @@ export async function sendSMS(
   // Ensure parsed is non-null for TypeScript and downstream logic
   const parsedObj = parsed ?? { error_message: text, status_code: response.status };
 
-  if (!response.ok || parsedObj.status_code !== 200 || parsedObj.status !== "SUCCESS") {
+  if (!(parsedObj.status_code === 200 && parsedObj.status === "SUCCESS")) {
     console.error("[SMS] Provider failure:", {
       status_code: parsedObj.status_code ?? response.status,
       status: parsedObj.status,
