@@ -63,7 +63,7 @@ const DailyReport = ({ data, reportDate, loading }: DailyReportProps) => {
       <div className="mb-4 flex justify-between items-end text-xs print:text-[10px]">
         <div>
           <p className="font-semibold text-slate-800">
-            Date: <span className="font-normal">{formattedDate}</span>
+            Date: <span className="font-normal" suppressHydrationWarning>{formattedDate}</span>
           </p>
         </div>
         <div className="text-right">

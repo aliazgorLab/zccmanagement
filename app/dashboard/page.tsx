@@ -49,10 +49,11 @@ export default function DashboardPage() {
   const [testSmsLoading, setTestSmsLoading] = useState(false);
   const [testSmsError, setTestSmsError] = useState<string | null>(null);
   const [testSmsSuccess, setTestSmsSuccess] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  });
+  const [selectedDate, setSelectedDate] = useState("");
+
+  useEffect(() => {
+    setSelectedDate(new Date().toISOString().split("T")[0]);
+  }, []);
 
   const normalizeSummary = (result: Partial<SummaryData> | null | undefined) => ({
     totalInflow: Number(result?.totalInflow ?? 0),
@@ -62,6 +63,8 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
+    if (!selectedDate) return;
+
     const fetchSummary = async () => {
       setLoading(true);
       try {
@@ -154,7 +157,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="text-slate-500">
-              Financial overview and transactions for {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+              Financial overview and transactions for <span suppressHydrationWarning>{selectedDate ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : ""}</span>
             </p>
           </div>
 
